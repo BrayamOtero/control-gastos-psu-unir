@@ -1,0 +1,1 @@
+package com.unir.gastos.entity;
