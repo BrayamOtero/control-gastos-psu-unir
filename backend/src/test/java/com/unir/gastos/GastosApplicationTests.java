@@ -44,4 +44,5 @@ class GastosApplicationTests {
             assertThat(result.next()).isFalse();
         }
     }
+
 }
