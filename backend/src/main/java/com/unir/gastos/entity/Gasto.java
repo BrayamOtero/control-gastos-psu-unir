@@ -17,6 +17,8 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PastOrPresent;
 import jakarta.validation.constraints.Size;
 
+import com.unir.gastos.exception.DatosInvalidosException;
+
 @Entity
 @Table(name = "gastos")
 public class Gasto {
@@ -67,10 +69,10 @@ public class Gasto {
 
     public void setFecha(LocalDate fecha) {
         if (fecha == null) {
-            throw new IllegalArgumentException("La fecha es obligatoria");
+            throw new DatosInvalidosException("La fecha es obligatoria");
         }
         if (fecha.isAfter(LocalDate.now())) {
-            throw new IllegalArgumentException("La fecha no puede ser futura");
+            throw new DatosInvalidosException("La fecha no puede ser futura");
         }
         this.fecha = fecha;
     }
@@ -81,16 +83,16 @@ public class Gasto {
 
     public void setImporte(BigDecimal importe) {
         if (importe == null) {
-            throw new IllegalArgumentException("El importe es obligatorio");
+            throw new DatosInvalidosException("El importe es obligatorio");
         }
         if (importe.signum() <= 0) {
-            throw new IllegalArgumentException("El importe debe ser mayor que cero");
+            throw new DatosInvalidosException("El importe debe ser mayor que cero");
         }
         if (importe.scale() > 2) {
-            throw new IllegalArgumentException("El importe no puede tener mas de dos decimales");
+            throw new DatosInvalidosException("El importe no puede tener mas de dos decimales");
         }
         if (importe.precision() - importe.scale() > MAX_DIGITOS_ENTEROS) {
-            throw new IllegalArgumentException("El importe no puede superar " + MAX_DIGITOS_ENTEROS + " digitos enteros");
+            throw new DatosInvalidosException("El importe no puede superar " + MAX_DIGITOS_ENTEROS + " digitos enteros");
         }
         this.importe = importe;
     }
@@ -101,7 +103,7 @@ public class Gasto {
 
     public void setCategoria(Categoria categoria) {
         if (categoria == null) {
-            throw new IllegalArgumentException("La categoria es obligatoria");
+            throw new DatosInvalidosException("La categoria es obligatoria");
         }
         this.categoria = categoria;
     }
@@ -112,7 +114,7 @@ public class Gasto {
 
     public void setDescripcion(String descripcion) {
         if (descripcion != null && descripcion.length() > 255) {
-            throw new IllegalArgumentException("La descripcion no puede superar 255 caracteres");
+            throw new DatosInvalidosException("La descripcion no puede superar 255 caracteres");
         }
         this.descripcion = descripcion;
     }
