@@ -21,6 +21,8 @@ import jakarta.validation.constraints.Size;
 @Table(name = "gastos")
 public class Gasto {
 
+    public static final int MAX_DIGITOS_ENTEROS = 10;
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -32,8 +34,8 @@ public class Gasto {
 
     @NotNull
     @DecimalMin(value = "0.00", inclusive = false)
-    @Digits(integer = Integer.MAX_VALUE, fraction = 2)
-    @Column(nullable = false, scale = 2)
+    @Digits(integer = Gasto.MAX_DIGITOS_ENTEROS, fraction = 2)
+    @Column(nullable = false, precision = Gasto.MAX_DIGITOS_ENTEROS + 2, scale = 2)
     private BigDecimal importe;
 
     @NotNull
@@ -86,6 +88,9 @@ public class Gasto {
         }
         if (importe.scale() > 2) {
             throw new IllegalArgumentException("El importe no puede tener mas de dos decimales");
+        }
+        if (importe.precision() - importe.scale() > MAX_DIGITOS_ENTEROS) {
+            throw new IllegalArgumentException("El importe no puede superar " + MAX_DIGITOS_ENTEROS + " digitos enteros");
         }
         this.importe = importe;
     }

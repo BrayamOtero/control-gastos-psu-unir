@@ -42,13 +42,13 @@ jacocoTestCoverageVerification {
 
             limit {
                 counter = 'LINE'
-                value = 'COVEREDCOUNT'
+                value = 'COVEREDRATIO'
                 minimum = 1.0
             }
 
             limit {
                 counter = 'BRANCH'
-                value = 'COVEREDCOUNT'
+                value = 'COVEREDRATIO'
                 minimum = 1.0
             }
         }

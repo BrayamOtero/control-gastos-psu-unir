@@ -49,7 +49,7 @@ class GastoTest {
         // Arrange
         var gasto = gastoValido();
         var fecha = LocalDate.now().minusDays(2);
-        var importe = new BigDecimal("99.99");
+        var importe = new BigDecimal("9999999999.99");
         var descripcion = "x".repeat(255);
 
         // Act
@@ -100,6 +100,7 @@ class GastoTest {
         assertThatIllegalArgumentException().isThrownBy(() -> gasto.setImporte(null));
         assertThatIllegalArgumentException().isThrownBy(() -> gasto.setImporte(BigDecimal.ZERO));
         assertThatIllegalArgumentException().isThrownBy(() -> gasto.setImporte(new BigDecimal("1.001")));
+        assertThatIllegalArgumentException().isThrownBy(() -> gasto.setImporte(new BigDecimal("12345678901.00")));
         assertThatIllegalArgumentException().isThrownBy(() -> gasto.setCategoria(null));
         assertThatIllegalArgumentException().isThrownBy(() -> gasto.setDescripcion("x".repeat(256)));
     }
