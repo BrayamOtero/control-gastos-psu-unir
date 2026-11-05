@@ -2,6 +2,7 @@ package com.unir.gastos.controller;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -17,6 +18,8 @@ import org.springframework.web.client.RestClient;
 
 import com.unir.gastos.dto.GastoRequestDto;
 import com.unir.gastos.dto.GastoResponseDto;
+import com.unir.gastos.dto.ResumenCategoriaDto;
+import com.unir.gastos.dto.ResumenMensualDto;
 import com.unir.gastos.entity.Categoria;
 import com.unir.gastos.repository.GastoRepository;
 
@@ -308,5 +311,65 @@ class GastoControllerIntegrationTest {
         // Assert
         assertThat(inexistente.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
         assertThat(noPositivo.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+    }
+
+    // ---------- Resumen mensual ----------
+
+    @Test
+    void resumenDevuelve200ConTotalesPorcentajesYOrdenPorImporte() {
+        // Arrange
+        var mes = YearMonth.from(HOY).minusMonths(1);
+        crear(mes.atDay(1), "30.00", Categoria.VIVIENDA, null);
+        crear(mes.atEndOfMonth(), "10.00", Categoria.OCIO, null);
+        crear(mes.atEndOfMonth().plusDays(1), "99.00", Categoria.OCIO, null);
+
+        // Act
+        var respuesta = cliente.get()
+                .uri("/resumen?mes={mes}&anio={anio}", mes.getMonthValue(), mes.getYear())
+                .retrieve().toEntity(ResumenMensualDto.class);
+
+        // Assert
+        assertThat(respuesta.getStatusCode()).isEqualTo(HttpStatus.OK);
+        var resumen = respuesta.getBody();
+        assertThat(resumen.anio()).isEqualTo(mes.getYear());
+        assertThat(resumen.mes()).isEqualTo(mes.getMonthValue());
+        assertThat(resumen.totalGastado()).isEqualByComparingTo("40.00");
+        assertThat(resumen.numeroGastos()).isEqualTo(2);
+        assertThat(resumen.categorias()).hasSize(Categoria.values().length);
+        assertThat(resumen.categorias()).extracting(ResumenCategoriaDto::categoria)
+                .startsWith(Categoria.VIVIENDA, Categoria.OCIO);
+        assertThat(resumen.categorias().get(0).porcentaje()).isEqualByComparingTo("75.00");
+        assertThat(resumen.categorias().get(1).porcentaje()).isEqualByComparingTo("25.00");
+        assertThat(resumen.categorias().get(2).total()).isEqualByComparingTo("0");
+    }
+
+    @Test
+    void resumenDeMesSinGastosDevuelve200ConCeros() {
+        // Act
+        var respuesta = cliente.get().uri("/resumen?mes=1&anio=2000").retrieve().toEntity(ResumenMensualDto.class);
+
+        // Assert
+        assertThat(respuesta.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(respuesta.getBody().totalGastado()).isEqualByComparingTo("0");
+        assertThat(respuesta.getBody().numeroGastos()).isZero();
+        assertThat(respuesta.getBody().categorias()).hasSize(Categoria.values().length);
+    }
+
+    @Test
+    void resumenConParametrosInvalidosDevuelve400() {
+        // Arrange
+        var consultas = List.of(
+                "/resumen?mes=13&anio=2026",
+                "/resumen?mes=0&anio=2026",
+                "/resumen?mes=5&anio=0",
+                "/resumen?mes=5",
+                "/resumen?anio=2026",
+                "/resumen?mes=abc&anio=2026");
+
+        // Act and Assert
+        for (var uri : consultas) {
+            assertThat(cliente.get().uri(uri).retrieve().toEntity(Error.class).getStatusCode())
+                    .as(uri).isEqualTo(HttpStatus.BAD_REQUEST);
+        }
     }
 }
