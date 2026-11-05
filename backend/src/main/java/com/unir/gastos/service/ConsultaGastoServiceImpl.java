@@ -3,10 +3,12 @@ package com.unir.gastos.service;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,6 +24,9 @@ import com.unir.gastos.repository.GastoSpecifications;
 @Service
 @Transactional(readOnly = true)
 public class ConsultaGastoServiceImpl implements ConsultaGastoService {
+
+    private static final Set<String> CAMPOS_ORDENABLES =
+            Set.of("id", "fecha", "importe", "categoria", "descripcion");
 
     private final GastoRepository gastoRepository;
 
@@ -99,9 +104,18 @@ public class ConsultaGastoServiceImpl implements ConsultaGastoService {
         if (pageable == null || pageable.isUnpaged()) {
             return PageRequest.of(0, TAMANO_MAXIMO_PAGINA);
         }
+        validarOrdenacion(pageable.getSort());
         if (pageable.getPageSize() > TAMANO_MAXIMO_PAGINA) {
             return PageRequest.of(pageable.getPageNumber(), TAMANO_MAXIMO_PAGINA, pageable.getSort());
         }
         return pageable;
+    }
+
+    private void validarOrdenacion(Sort sort) {
+        for (var orden : sort) {
+            if (!CAMPOS_ORDENABLES.contains(orden.getProperty())) {
+                throw new DatosInvalidosException("No se puede ordenar por " + orden.getProperty());
+            }
+        }
     }
 }

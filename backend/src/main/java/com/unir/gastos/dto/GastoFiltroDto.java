@@ -3,11 +3,14 @@ package com.unir.gastos.dto;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.format.annotation.DateTimeFormat.ISO;
+
 import com.unir.gastos.entity.Categoria;
 
 public record GastoFiltroDto(
-        LocalDate fechaDesde,
-        LocalDate fechaHasta,
+        @DateTimeFormat(iso = ISO.DATE) LocalDate fechaDesde,
+        @DateTimeFormat(iso = ISO.DATE) LocalDate fechaHasta,
         BigDecimal importeMinimo,
         BigDecimal importeMaximo,
         Categoria categoria,
