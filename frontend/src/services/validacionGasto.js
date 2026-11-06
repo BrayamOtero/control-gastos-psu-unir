@@ -5,15 +5,17 @@ export function fechaLocalHoy() {
   return `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(hoy.getDate()).padStart(2, '0')}`;
 }
 
+export function esFechaValida(valor) {
+  const fecha = new Date(`${valor}T00:00:00Z`);
+  return /^\d{4}-\d{2}-\d{2}$/.test(valor) &&
+    valor >= '0001-01-01' &&
+    !Number.isNaN(fecha.getTime()) &&
+    fecha.toISOString().slice(0, 10) === valor;
+}
+
 export function validarGasto(datos, hoy = fechaLocalHoy()) {
   const errores = {};
-  const fecha = new Date(`${datos.fecha}T00:00:00Z`);
-  if (
-    !/^\d{4}-\d{2}-\d{2}$/.test(datos.fecha) ||
-    datos.fecha < '0001-01-01' ||
-    Number.isNaN(fecha.getTime()) ||
-    fecha.toISOString().slice(0, 10) !== datos.fecha
-  ) {
+  if (!esFechaValida(datos.fecha)) {
     errores.fecha = 'Selecciona una fecha válida.';
   } else if (datos.fecha > hoy) {
     errores.fecha = 'La fecha no puede ser futura.';

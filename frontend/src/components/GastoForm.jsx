@@ -33,7 +33,7 @@ export default function GastoForm({ onGuardar, guardando, onEditar }) {
     }
     if (await onGuardar(datos)) {
       setDatos(datosIniciales());
-      formulario.current.elements.namedItem('importe').focus();
+      formulario.current?.elements.namedItem('importe').focus();
     }
   }
 

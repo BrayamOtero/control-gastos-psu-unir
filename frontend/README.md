@@ -1,7 +1,7 @@
 # Frontend de control de gastos
 
-Página de creación de gastos en español, con React, Vite y CSS sin librerías de
-estilos. Envía solicitudes reales a `POST /api/gastos` según el
+Listado paginado y creación de gastos en español, con React, Vite y CSS sin librerías de
+estilos. Envía solicitudes reales a `GET /api/gastos` y `POST /api/gastos` según el
 [contrato del backend](../backend/API.md).
 
 ## Desarrollo
@@ -31,17 +31,32 @@ Las variables se incorporan al compilar; cambiar la URL requiere recompilar.
 
 ## Estructura
 
-- `src/components/`: formulario accesible y errores de validación.
-- `src/hooks/`: estado de envío, errores y confirmación.
+- `src/components/`: formularios, tabla y paginación accesibles.
+- `src/hooks/`: navegación, consultas, estado de envío, errores y confirmación.
 - `src/services/`: llamadas HTTP y validación del contrato.
 - `src/constants/`: categorías de la API y etiquetas en español.
-- `src/pages/`: página de creación.
+- `src/pages/`: páginas de listado y creación.
 - `src/styles.css`: estilos sencillos y adaptables a móviles.
 
 Se admiten importes con coma o punto, que se envían como números JSON.
 El formulario conserva los datos si falla el envío y solo se limpia tras
 recibir la confirmación `201` del servidor. No se reintentan solicitudes
 automáticamente, para evitar duplicados.
+
+La pantalla principal muestra únicamente fecha, importe y categoría, con diez
+gastos por página. Inicialmente consulta desde el primer hasta el último día
+del mes actual (fecha local), ordenando por fecha descendente. Los filtros
+opcionales de fechas, categoría, descripción e importes se combinan en la API.
+Puedes ordenar por fecha, importe o categoría en ambas direcciones.
+Pulsa **Aplicar filtros** para consultar; se vuelve a la primera página.
+**Restablecer mes actual** restaura los filtros iniciales. Vaciar los límites
+de fecha permite consultar otros meses o todos los gastos.
+
+El botón superior **Crear gasto** abre `#/crear-gasto`. Tras recibir `201`,
+se vuelve a `#/` y se consulta de nuevo el mes actual, mostrando la confirmación
+de creación. Un gasto de otro mes no aparecerá hasta ajustar las fechas.
+La navegación usa el fragmento de URL y admite los botones atrás/adelante
+del navegador sin configurar rutas en el servidor ni añadir librerías.
 
 ## Validación y compilación
 
@@ -51,4 +66,5 @@ npm run build
 npm run preview
 ```
 
-Las pruebas unitarias validan límites, fechas y categorías; no simulan la API.
+Las pruebas unitarias validan límites, fechas, categorías, filtros y parámetros
+de paginación y orden; no simulan la API.
