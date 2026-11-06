@@ -1,0 +1,42 @@
+:root {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: #23352d;
+  background: #f3f6f4;
+  font-synthesis: none;
+  line-height: 1.5;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; }
+.cabecera { padding: 1rem max(1.25rem, calc((100% - 660px) / 2)); background: #245747; color: white; font-weight: 700; }
+.contenedor { max-width: 700px; margin: 2.5rem auto; padding: 0 1.25rem; }
+.tarjeta { background: white; padding: 2rem; border: 1px solid #dce4df; border-radius: 12px; }
+h1 { margin: 0; font-size: 1.8rem; }
+.introduccion { margin: .5rem 0 1.5rem; color: #53645c; }
+fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
+.fila { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.campo { margin-bottom: 1.2rem; min-width: 0; }
+label { display: block; margin-bottom: .4rem; font-weight: 600; }
+.opcional, .ayuda { color: #53645c; font-size: .875rem; font-weight: 400; }
+input, select, textarea, button { font: inherit; }
+input, select, textarea { width: 100%; min-height: 44px; padding: .7rem; border: 1px solid #84998e; border-radius: 6px; background: white; color: inherit; }
+textarea { resize: vertical; }
+input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-visible { outline: 3px solid #267c61; outline-offset: 3px; }
+[aria-invalid="true"] { border-color: #ae2929; }
+.contador { margin: .25rem 0 0; text-align: right; }
+.error-campo { color: #a12323; font-size: .875rem; margin: .35rem 0 0; }
+button { padding: .75rem 1.4rem; border: 0; border-radius: 6px; background: #245747; color: white; cursor: pointer; font-weight: 600; }
+button:hover:not(:disabled) { background: #193e32; }
+fieldset:disabled { opacity: .7; }
+button:disabled { cursor: wait; }
+.mensaje { padding: 1rem; margin-bottom: 1.25rem; border: 1px solid; border-radius: 6px; overflow-wrap: anywhere; }
+.mensaje p { margin: .3rem 0 0; }
+.exito { background: #edf8f0; color: #205138; border-color: #9bbfa8; }
+.error { background: #fff1f0; color: #9a2424; border-color: #d9a6a2; }
+.solo-lectores { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+@media (max-width: 520px) {
+  .contenedor { margin: 1.25rem auto; }
+  .tarjeta { padding: 1.25rem; }
+  .fila { grid-template-columns: 1fr; gap: 0; }
+  button { width: 100%; }
+}
