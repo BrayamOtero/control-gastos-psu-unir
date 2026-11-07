@@ -27,7 +27,10 @@ export default function ListaGastosPage({ consulta, onConsultar, mensaje, onAbri
   return (
     <>
       <Cabecera ancha>
-        <a className="boton-enlace" href="#/crear-gasto">Crear gasto</a>
+        <nav className="navegacion-cabecera" aria-label="Secciones">
+          <a className="enlace-cabecera" href="#/resumen">Resumen mensual</a>
+          <a className="boton-enlace" href="#/crear-gasto">Crear gasto</a>
+        </nav>
       </Cabecera>
       <main className="contenedor contenedor-lista">
         <section className="tarjeta" aria-labelledby="titulo">

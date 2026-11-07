@@ -2,10 +2,11 @@ import { useCallback, useEffect, useState } from 'react';
 import CrearGastoPage from './pages/CrearGastoPage.jsx';
 import DetalleGastoPage from './pages/DetalleGastoPage.jsx';
 import ListaGastosPage from './pages/ListaGastosPage.jsx';
+import ResumenMensualPage from './pages/ResumenMensualPage.jsx';
 import { useNavegacion } from './hooks/useNavegacion.js';
 import { filtrosMesActual } from './services/filtrosGastos.js';
 
-const TITULOS = { lista: 'Mis gastos', crear: 'Crear gasto', detalle: 'Detalle del gasto' };
+const TITULOS = { lista: 'Mis gastos', crear: 'Crear gasto', detalle: 'Detalle del gasto', resumen: 'Resumen mensual' };
 const consultaInicial = () => ({ filtros: filtrosMesActual(), pagina: 0 });
 
 export default function App() {
@@ -33,6 +34,7 @@ export default function App() {
 
   if (ruta.nombre === 'crear') return <CrearGastoPage onCreado={alCrear} />;
   if (ruta.nombre === 'detalle') return <DetalleGastoPage key={ruta.id} id={ruta.id} onEliminado={alEliminar} />;
+  if (ruta.nombre === 'resumen') return <ResumenMensualPage />;
   return (
     <ListaGastosPage
       consulta={consultaLista}

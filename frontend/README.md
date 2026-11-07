@@ -36,7 +36,7 @@ Las variables se incorporan al compilar; cambiar la URL requiere recompilar.
 - `src/hooks/`: navegación, consulta, creación, modificación y eliminación.
 - `src/services/`: llamadas HTTP, validación y formato.
 - `src/constants/`: categorías de la API y etiquetas en español.
-- `src/pages/`: páginas de listado, creación y detalle.
+- `src/pages/`: páginas de listado, creación, detalle y resumen mensual.
 - `src/styles.css`: estilos sencillos y adaptables a móviles.
 
 Se admiten importes con coma o punto, que se envían como números JSON.
@@ -69,6 +69,17 @@ confirmación en un diálogo nativo (`<dialog>`) antes de enviar `DELETE`.
 Desde el listado se recarga la página actual (o la anterior si quedó vacía);
 desde el detalle se vuelve al listado con la confirmación de eliminación.
 
+## Resumen mensual
+
+El enlace **Resumen mensual**, junto a **Crear gasto**, abre `#/resumen`.
+Consulta `GET /api/gastos/resumen?mes={mes}&anio={anio}` con el mes y año locales
+actuales por defecto. En la parte superior puedes escoger el mes y un año
+entero entre 1 y 9999; **Consultar resumen** aplica ambos filtros.
+Se muestran el total gastado, el número de gastos y las siete categorías con
+su total, número de gastos y porcentaje, en el orden devuelto por la API.
+Los meses sin gastos (incluidos los futuros) muestran ceros. Los fallos de
+consulta se muestran con la opción de reintentar; no se simulan resultados.
+
 ## Validación y compilación
 
 ```sh
@@ -78,4 +89,5 @@ npm run preview
 ```
 
 Las pruebas unitarias validan límites, fechas, categorías, filtros, parámetros
-de paginación y orden, y el formato para mostrar y editar; no simulan la API.
+de paginación y orden, el formato para mostrar y editar, y los períodos y
+respuestas del resumen mensual; no simulan la API.

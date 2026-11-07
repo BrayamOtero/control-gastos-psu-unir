@@ -1,4 +1,5 @@
 import { parametrosListado } from './filtrosGastos.js';
+import { esResumenMensual } from './resumenMensual.js';
 
 const API_URL = (import.meta.env.VITE_API_URL || 'http://localhost:8080').replace(/\/+$/, '');
 // En desarrollo, el proxy de Vite usa la misma URL sin requerir CORS.
@@ -121,6 +122,18 @@ export async function listarGastos(filtros, pagina, signal) {
     !Number.isInteger(cuerpo.page?.totalPages) || cuerpo.page.totalPages < 0
   ) {
     throw new Error('El servidor devolvió un listado de gastos no válido.');
+  }
+  return cuerpo;
+}
+
+export async function obtenerResumenMensual(periodo, signal) {
+  const parametros = new URLSearchParams({ mes: String(periodo.mes), anio: String(periodo.anio) });
+  const { cuerpo } = await solicitar(`/resumen?${parametros}`, { signal }, {
+    error: 'No se pudo consultar el resumen mensual',
+    tiempo: 'El servidor tardó demasiado en responder al consultar el resumen mensual.',
+  });
+  if (!esResumenMensual(cuerpo, periodo)) {
+    throw new Error('El servidor devolvió un resumen mensual no válido.');
   }
   return cuerpo;
 }
