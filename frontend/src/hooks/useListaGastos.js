@@ -1,38 +1,42 @@
 import { useEffect, useState } from 'react';
 import { listarGastos } from '../services/gastos.js';
-import { filtrosMesActual } from '../services/filtrosGastos.js';
 
-export function useListaGastos() {
-  const [consulta, setConsulta] = useState(() => ({ filtros: filtrosMesActual(), pagina: 0 }));
+// La consulta (filtros y página) la conserva App para mantenerla al volver del detalle.
+export function useListaGastos(consulta, setConsulta) {
   const [estado, setEstado] = useState({ cargando: true, error: '', resultado: null });
+  const [intento, setIntento] = useState(0);
 
   useEffect(() => {
     const controlador = new AbortController();
     setEstado({ cargando: true, error: '', resultado: null });
     listarGastos(consulta.filtros, consulta.pagina, controlador.signal)
       .then((resultado) => {
-        if (!controlador.signal.aborted) setEstado({ cargando: false, error: '', resultado });
+        if (controlador.signal.aborted) return;
+        const { number, totalPages } = resultado.page;
+        // Tras eliminar, la página actual puede dejar de existir: se muestra la última disponible.
+        if (number > 0 && number >= totalPages) {
+          setConsulta((actual) => ({ ...actual, pagina: Math.max(totalPages - 1, 0) }));
+          return;
+        }
+        setEstado({ cargando: false, error: '', resultado });
       })
       .catch((error) => {
-        // Las consultas sustituidas o desmontadas ya no deben actualizar la pantalla.
         if (!controlador.signal.aborted) setEstado({ cargando: false, error: error.message, resultado: null });
       });
     return () => controlador.abort();
-  }, [consulta]);
+  }, [consulta, intento, setConsulta]);
 
   function aplicarFiltros(filtros) {
-    setEstado({ cargando: true, error: '', resultado: null });
     setConsulta({ filtros, pagina: 0 });
   }
 
   function cambiarPagina(pagina) {
-    setEstado({ cargando: true, error: '', resultado: null });
     setConsulta((actual) => ({ ...actual, pagina }));
   }
 
-  function reintentar() {
-    setConsulta((actual) => ({ ...actual }));
+  function recargar() {
+    setIntento((actual) => actual + 1);
   }
 
-  return { ...estado, filtros: consulta.filtros, aplicarFiltros, cambiarPagina, reintentar };
+  return { ...estado, aplicarFiltros, cambiarPagina, recargar };
 }

@@ -1,7 +1,8 @@
 # Frontend de control de gastos
 
-Listado paginado y creación de gastos en español, con React, Vite y CSS sin librerías de
-estilos. Envía solicitudes reales a `GET /api/gastos` y `POST /api/gastos` según el
+Listado paginado, creación, detalle, edición y eliminación de gastos en español,
+con React, Vite y CSS sin librerías de estilos. Envía solicitudes reales a
+`GET`, `POST`, `PUT` y `DELETE` de `/api/gastos` según el
 [contrato del backend](../backend/API.md).
 
 ## Desarrollo
@@ -31,11 +32,11 @@ Las variables se incorporan al compilar; cambiar la URL requiere recompilar.
 
 ## Estructura
 
-- `src/components/`: formularios, tabla y paginación accesibles.
-- `src/hooks/`: navegación, consultas, estado de envío, errores y confirmación.
-- `src/services/`: llamadas HTTP y validación del contrato.
+- `src/components/`: cabecera, formularios, tabla, paginación y diálogo de confirmación.
+- `src/hooks/`: navegación, consulta, creación, modificación y eliminación.
+- `src/services/`: llamadas HTTP, validación y formato.
 - `src/constants/`: categorías de la API y etiquetas en español.
-- `src/pages/`: páginas de listado y creación.
+- `src/pages/`: páginas de listado, creación y detalle.
 - `src/styles.css`: estilos sencillos y adaptables a móviles.
 
 Se admiten importes con coma o punto, que se envían como números JSON.
@@ -58,6 +59,16 @@ de creación. Un gasto de otro mes no aparecerá hasta ajustar las fechas.
 La navegación usa el fragmento de URL y admite los botones atrás/adelante
 del navegador sin configurar rutas en el servidor ni añadir librerías.
 
+Al pulsar una fila del listado se abre `#/gastos/{id}`, que muestra fecha,
+importe, categoría y descripción. **Editar** abre el formulario con los datos
+actuales; **Guardar cambios** los envía con `PUT` y muestra el resultado.
+Los filtros y la página del listado se conservan al volver del detalle.
+
+El botón **Eliminar** está en cada fila del listado y en el detalle. Pide
+confirmación en un diálogo nativo (`<dialog>`) antes de enviar `DELETE`.
+Desde el listado se recarga la página actual (o la anterior si quedó vacía);
+desde el detalle se vuelve al listado con la confirmación de eliminación.
+
 ## Validación y compilación
 
 ```sh
@@ -66,5 +77,5 @@ npm run build
 npm run preview
 ```
 
-Las pruebas unitarias validan límites, fechas, categorías, filtros y parámetros
-de paginación y orden; no simulan la API.
+Las pruebas unitarias validan límites, fechas, categorías, filtros, parámetros
+de paginación y orden, y el formato para mostrar y editar; no simulan la API.

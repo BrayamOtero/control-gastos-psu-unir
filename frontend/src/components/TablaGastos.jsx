@@ -1,17 +1,43 @@
-import { CATEGORIAS } from '../constants/categorias.js';
+import { describirGasto, etiquetaCategoria, formatearFecha, formatearImporte } from '../services/formato.js';
 
-export default function TablaGastos({ gastos }) {
+export default function TablaGastos({ gastos, onAbrir, onEliminar, eliminando }) {
+  function abrirDesdeFila(event, id) {
+    if (!event.target.closest('a, button')) onAbrir(id);
+  }
+
   return (
     <div className="tabla-contenedor">
-      <table>
-        <caption className="solo-lectores">Gastos encontrados</caption>
-        <thead><tr><th scope="col">Fecha</th><th scope="col" className="importe">Importe</th><th scope="col">Categoría</th></tr></thead>
+      <table className="tabla-gastos">
+        <caption className="solo-lectores">Gastos encontrados. Selecciona un gasto para ver su detalle.</caption>
+        <thead>
+          <tr>
+            <th scope="col">Fecha</th>
+            <th scope="col" className="importe">Importe</th>
+            <th scope="col">Categoría</th>
+            <th scope="col"><span className="solo-lectores">Acciones</span></th>
+          </tr>
+        </thead>
         <tbody>
           {gastos.map((gasto) => (
-            <tr key={gasto.id}>
-              <td><time dateTime={gasto.fecha}>{gasto.fecha.split('-').reverse().join('/')}</time></td>
-              <td className="importe">{gasto.importe.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-              <td>{CATEGORIAS.find(({ valor }) => valor === gasto.categoria)?.etiqueta || gasto.categoria}</td>
+            <tr key={gasto.id} className="fila-enlace" onClick={(event) => abrirDesdeFila(event, gasto.id)}>
+              <td>
+                <a href={`#/gastos/${gasto.id}`} aria-label={`Ver detalle del gasto ${describirGasto(gasto)}`}>
+                  <time dateTime={gasto.fecha}>{formatearFecha(gasto.fecha)}</time>
+                </a>
+              </td>
+              <td className="importe">{formatearImporte(gasto.importe)}</td>
+              <td>{etiquetaCategoria(gasto.categoria)}</td>
+              <td className="acciones-fila">
+                <button
+                  type="button"
+                  className="boton-peligro boton-pequeno"
+                  disabled={eliminando}
+                  onClick={() => onEliminar(gasto)}
+                  aria-label={`Eliminar gasto ${describirGasto(gasto)}`}
+                >
+                  Eliminar
+                </button>
+              </td>
             </tr>
           ))}
         </tbody>

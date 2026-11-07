@@ -1,23 +1,44 @@
 import { useCallback, useEffect, useState } from 'react';
 import CrearGastoPage from './pages/CrearGastoPage.jsx';
+import DetalleGastoPage from './pages/DetalleGastoPage.jsx';
 import ListaGastosPage from './pages/ListaGastosPage.jsx';
 import { useNavegacion } from './hooks/useNavegacion.js';
+import { filtrosMesActual } from './services/filtrosGastos.js';
+
+const TITULOS = { lista: 'Mis gastos', crear: 'Crear gasto', detalle: 'Detalle del gasto' };
+const consultaInicial = () => ({ filtros: filtrosMesActual(), pagina: 0 });
 
 export default function App() {
-  const { creando, irAlListado } = useNavegacion();
+  const { ruta, navegar } = useNavegacion();
   const [mensaje, setMensaje] = useState('');
+  const [consultaLista, setConsultaLista] = useState(consultaInicial);
 
   useEffect(() => {
-    document.title = `${creando ? 'Crear gasto' : 'Mis gastos'} | Control de gastos`;
-    if (creando) setMensaje('');
-  }, [creando]);
+    document.title = `${TITULOS[ruta.nombre]} | Control de gastos`;
+    if (ruta.nombre !== 'lista') setMensaje('');
+  }, [ruta.nombre]);
 
   const alCrear = useCallback((gasto) => {
     setMensaje(`Gasto #${gasto.id} creado correctamente.`);
-    irAlListado();
-  }, [irAlListado]);
+    setConsultaLista(consultaInicial());
+    navegar('/');
+  }, [navegar]);
 
-  return creando
-    ? <CrearGastoPage onCreado={alCrear} />
-    : <ListaGastosPage mensaje={mensaje} />;
+  const alEliminar = useCallback((id) => {
+    setMensaje(`Gasto #${id} eliminado correctamente.`);
+    navegar('/');
+  }, [navegar]);
+
+  const abrirDetalle = useCallback((id) => navegar(`/gastos/${id}`), [navegar]);
+
+  if (ruta.nombre === 'crear') return <CrearGastoPage onCreado={alCrear} />;
+  if (ruta.nombre === 'detalle') return <DetalleGastoPage key={ruta.id} id={ruta.id} onEliminado={alEliminar} />;
+  return (
+    <ListaGastosPage
+      consulta={consultaLista}
+      onConsultar={setConsultaLista}
+      mensaje={mensaje}
+      onAbrir={abrirDetalle}
+    />
+  );
 }

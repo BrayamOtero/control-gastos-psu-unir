@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import Cabecera from '../components/Cabecera.jsx';
 import GastoForm from '../components/GastoForm.jsx';
 import { useCrearGasto } from '../hooks/useCrearGasto.js';
 
@@ -11,7 +12,7 @@ export default function CrearGastoPage({ onCreado }) {
 
   return (
     <>
-      <header className="cabecera">Control de gastos</header>
+      <Cabecera />
       <main className="contenedor">
         <section className="tarjeta" aria-labelledby="titulo">
           <a className="volver" href="#/">Volver a mis gastos</a>

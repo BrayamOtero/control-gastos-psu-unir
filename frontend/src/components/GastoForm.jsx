@@ -2,15 +2,17 @@ import { useRef, useState } from 'react';
 import { CATEGORIAS } from '../constants/categorias.js';
 import { fechaLocalHoy, validarGasto } from '../services/validacionGasto.js';
 
-const datosIniciales = () => ({
+const datosVacios = () => ({
   fecha: fechaLocalHoy(),
   importe: '',
   categoria: '',
   descripcion: '',
 });
 
-export default function GastoForm({ onGuardar, guardando, onEditar }) {
-  const [datos, setDatos] = useState(datosIniciales);
+export default function GastoForm({
+  iniciales, onGuardar, guardando, onEditar, textoGuardar = 'Guardar gasto', onCancelar,
+}) {
+  const [datos, setDatos] = useState(() => iniciales ?? datosVacios());
   const [errores, setErrores] = useState({});
   const formulario = useRef(null);
 
@@ -31,10 +33,7 @@ export default function GastoForm({ onGuardar, guardando, onEditar }) {
       formulario.current.elements.namedItem(primerCampo).focus();
       return;
     }
-    if (await onGuardar(datos)) {
-      setDatos(datosIniciales());
-      formulario.current?.elements.namedItem('importe').focus();
-    }
+    await onGuardar(datos);
   }
 
   function accesibilidad(campo) {
@@ -75,7 +74,10 @@ export default function GastoForm({ onGuardar, guardando, onEditar }) {
           <p id="descripcion-ayuda" className="ayuda contador">{datos.descripcion.length}/255 caracteres</p>
           {errores.descripcion && <p id="descripcion-error" className="error-campo">{errores.descripcion}</p>}
         </div>
-        <button type="submit">{guardando ? 'Guardando…' : 'Guardar gasto'}</button>
+        <div className="acciones">
+          <button type="submit">{guardando ? 'Guardando…' : textoGuardar}</button>
+          {onCancelar && <button type="button" className="boton-secundario" onClick={onCancelar}>Cancelar</button>}
+        </div>
       </fieldset>
     </form>
   );
