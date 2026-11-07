@@ -1,8 +1,7 @@
 import { parametrosListado } from './filtrosGastos.js';
 import { esResumenMensual } from './resumenMensual.js';
 
-const API_URL = (import.meta.env.VITE_API_URL || 'http://localhost:8080').replace(/\/+$/, '');
-// En desarrollo, el proxy de Vite usa la misma URL sin requerir CORS.
+const API_URL = (import.meta.env.VITE_API_URL || '').replace(/\/+$/, '');
 const BASE_URL = import.meta.env.DEV ? '' : API_URL;
 const TIEMPO_MAXIMO_MS = 15000;
 
