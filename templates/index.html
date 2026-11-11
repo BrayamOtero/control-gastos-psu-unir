@@ -63,6 +63,7 @@
               <th scope="col" class="importe">Importe</th>
               <th scope="col">Categoría</th>
               <th scope="col">Descripción</th>
+              <th scope="col">Acciones</th>
             </tr>
           </thead>
           <tbody id="gastos"></tbody>
@@ -152,6 +153,17 @@
             fila.append(celda);
           });
 
+          const acciones = document.createElement("td");
+          const eliminar = document.createElement("button");
+
+          eliminar.type = "button";
+          eliminar.textContent = "Eliminar";
+          eliminar.setAttribute("aria-label", `Eliminar gasto del ${gasto.fecha}`);
+          eliminar.addEventListener("click", () => eliminarGasto(gasto.id, eliminar));
+
+          acciones.append(eliminar);
+          fila.append(acciones);
+
           filas.append(fila);
         }
 
@@ -184,7 +196,72 @@
       cargarGastos();
     });
 
+    const filtrosGuardados = new URLSearchParams(window.location.search);
+
+    for (const nombre of ["mes", "categoria", "q"]) {
+    formulario.elements.namedItem(nombre).value =
+        filtrosGuardados.get(nombre) || "";
+    }
+
     cargarGastos();
+
+    const url = new URL(window.location.href);
+
+    for (const nombre of ["mes", "categoria", "q"]) {
+    url.searchParams.delete(nombre);
+    }
+
+    for (const [nombre, valor] of parametros) {
+    url.searchParams.set(nombre, valor);
+    }
+
+    window.history.replaceState(null, "", url);
+
+    async function eliminarGasto(id, boton) {
+        if (boton.disabled) return;
+
+        if (!window.confirm("¿Quieres eliminar este gasto? Esta acción no se puede deshacer.")) {
+            return;
+        }
+
+        boton.disabled = true;
+        boton.textContent = "Eliminando…";
+        estado.classList.remove("error");
+        estado.textContent = "Eliminando gasto…";
+
+        try {
+            const respuesta = await fetch(`${endpoint}/${encodeURIComponent(id)}`, {
+            method: "DELETE",
+            headers: { Accept: "application/json" },
+            });
+
+            if (respuesta.status !== 204) {
+            let mensaje = "No se pudo eliminar el gasto. Inténtalo de nuevo.";
+
+            if (respuesta.headers.get("content-type")?.includes("application/json")) {
+                const datos = await respuesta.json();
+                if (typeof datos?.error === "string") {
+                mensaje = datos.error;
+                }
+            }
+
+            throw new Error(mensaje);
+            }
+
+            window.location.reload();
+        } catch (error) {
+            estado.textContent =
+            error instanceof TypeError || error instanceof SyntaxError
+                ? "No se pudo completar la solicitud. Comprueba el listado antes de volver a intentarlo."
+                : error instanceof Error
+                ? error.message
+                : "No se pudo eliminar el gasto. Inténtalo de nuevo.";
+            estado.classList.add("error");
+        } finally {
+            boton.disabled = false;
+            boton.textContent = "Eliminar";
+        }
+        }
   </script>
 </body>
 </html>
