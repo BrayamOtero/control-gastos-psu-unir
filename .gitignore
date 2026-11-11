@@ -1,0 +1,6 @@
+# Base de datos local
+gastos.db
+gastos.db-journal
+
+# Entorno virtual
+.venv/
