@@ -89,6 +89,17 @@
         const texto = valor.trim();
         if (texto) parametros.set(nombre, texto);
       }
+      const url = new URL(window.location.href);
+
+      for (const nombre of ["mes", "categoria", "q"]) {
+        url.searchParams.delete(nombre);
+      }
+
+      for (const [nombre, valor] of parametros) {
+        url.searchParams.set(nombre, valor);
+      }
+
+      window.history.replaceState(null, "", url);
 
       estado.textContent = "Cargando gastos…";
       estado.classList.remove("error");
@@ -205,18 +216,6 @@
 
     cargarGastos();
 
-    const url = new URL(window.location.href);
-
-    for (const nombre of ["mes", "categoria", "q"]) {
-    url.searchParams.delete(nombre);
-    }
-
-    for (const [nombre, valor] of parametros) {
-    url.searchParams.set(nombre, valor);
-    }
-
-    window.history.replaceState(null, "", url);
-
     async function eliminarGasto(id, boton) {
         if (boton.disabled) return;
 
@@ -261,7 +260,7 @@
             boton.disabled = false;
             boton.textContent = "Eliminar";
         }
-        }
+    }
   </script>
 </body>
 </html>
