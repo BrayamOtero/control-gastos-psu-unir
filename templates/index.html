@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mis gastos</title>
+  <link rel="stylesheet"
+        href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+  <main>
+    <h1>Mis gastos</h1>
+    <p>Consulta y filtra tus gastos personales.</p>
+
+    <form id="filtros">
+      <label for="mes">
+        Mes
+        <input id="mes" name="mes" type="month" max="{{ mes_actual }}">
+      </label>
+
+      <label for="categoria">
+        Categoría
+        <select id="categoria" name="categoria">
+          <option value="">Todas las categorías</option>
+          {% for categoria in categorias %}
+          <option value="{{ categoria }}">{{ categoria }}</option>
+          {% endfor %}
+        </select>
+      </label>
+
+      <label for="q">
+        Descripción
+        <input id="q" name="q" type="search"
+               placeholder="Buscar en la descripción">
+      </label>
+
+      <div class="acciones">
+        <button type="submit">Filtrar</button>
+        <button type="button" id="limpiar" class="secundario">
+          Limpiar filtros
+        </button>
+      </div>
+    </form>
+
+    <p id="estado" role="status" aria-live="polite"></p>
+
+    <section id="resultados" aria-label="Listado de gastos" aria-busy="false">
+      <div id="tabla-contenedor" class="tabla-contenedor" hidden>
+        <table>
+          <caption>Gastos del más reciente al más antiguo</caption>
+          <thead>
+            <tr>
+              <th scope="col">Fecha</th>
+              <th scope="col" class="importe">Importe</th>
+              <th scope="col">Categoría</th>
+              <th scope="col">Descripción</th>
+            </tr>
+          </thead>
+          <tbody id="gastos"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const formulario = document.querySelector("#filtros");
+    const estado = document.querySelector("#estado");
+    const resultados = document.querySelector("#resultados");
+    const contenedor = document.querySelector("#tabla-contenedor");
+    const cuerpo = document.querySelector("#gastos");
+    const endpoint = {{ url_for('listar_gastos') | tojson }};
+    let ultimaConsulta = 0;
+
+    async function cargarGastos() {
+      const consulta = ++ultimaConsulta;
+      const parametros = new URLSearchParams();
+
+      for (const [nombre, valor] of new FormData(formulario)) {
+        const texto = valor.trim();
+        if (texto) parametros.set(nombre, texto);
+      }
+
+      estado.textContent = "Cargando gastos…";
+      estado.classList.remove("error");
+      resultados.setAttribute("aria-busy", "true");
+      contenedor.hidden = true;
+      cuerpo.replaceChildren();
+
+      try {
+        const query = parametros.toString();
+        const respuesta = await fetch(
+          query ? `${endpoint}?${query}` : endpoint,
+          { headers: { Accept: "application/json" } }
+        );
+
+        if (consulta !== ultimaConsulta) return;
+
+        if (!respuesta.headers.get("content-type")?.includes("application/json")) {
+          throw new Error("No se pudieron cargar los gastos. Inténtalo de nuevo.");
+        }
+
+        const datos = await respuesta.json();
+        if (consulta !== ultimaConsulta) return;
+
+        if (!respuesta.ok) {
+          const detalles = datos?.mensajes;
+          const mensajes = detalles && typeof detalles === "object"
+            ? Object.values(detalles).filter(valor => typeof valor === "string")
+            : [];
+
+          throw new Error(
+            mensajes.join(" ") ||
+            (typeof datos?.error === "string" ? datos.error : "") ||
+            "No se pudieron cargar los gastos. Inténtalo de nuevo."
+          );
+        }
+
+        if (!Array.isArray(datos)) {
+          throw new Error("El servidor devolvió una respuesta inesperada.");
+        }
+
+        if (datos.length === 0) {
+          estado.textContent = "No se encontraron gastos";
+          return;
+        }
+
+        const filas = document.createDocumentFragment();
+
+        // La API ya devuelve los gastos ordenados por fecha descendente.
+        for (const gasto of datos) {
+          const fila = document.createElement("tr");
+          const valores = [
+            gasto.fecha,
+            gasto.importe.toFixed(2),
+            gasto.categoria,
+            gasto.descripcion,
+          ];
+
+          valores.forEach((valor, indice) => {
+            const celda = document.createElement("td");
+            celda.textContent = valor;
+            if (indice === 1) celda.classList.add("importe");
+            fila.append(celda);
+          });
+
+          filas.append(fila);
+        }
+
+        cuerpo.append(filas);
+        contenedor.hidden = false;
+        estado.textContent = "";
+      } catch (error) {
+        if (consulta !== ultimaConsulta) return;
+
+        estado.textContent = error instanceof TypeError
+          ? "No se pudieron cargar los gastos. Revisa tu conexión e inténtalo de nuevo."
+          : error instanceof Error
+            ? error.message
+            : "No se pudieron cargar los gastos. Inténtalo de nuevo.";
+        estado.classList.add("error");
+      } finally {
+        if (consulta === ultimaConsulta) {
+          resultados.setAttribute("aria-busy", "false");
+        }
+      }
+    }
+
+    formulario.addEventListener("submit", evento => {
+      evento.preventDefault();
+      cargarGastos();
+    });
+
+    document.querySelector("#limpiar").addEventListener("click", () => {
+      formulario.reset();
+      cargarGastos();
+    });
+
+    cargarGastos();
+  </script>
+</body>
+</html>

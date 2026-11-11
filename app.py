@@ -5,7 +5,7 @@ from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from datetime import date, datetime
 
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, render_template, request
 
 app = Flask(__name__)
 DB_PATH = Path(__file__).with_name("gastos.db")
@@ -321,6 +321,14 @@ def resumen_gastos():
         respuesta["mensaje"] = "No hay gastos registrados en este mes"
 
     return jsonify(respuesta), 200
+
+@app.get("/")
+def index():
+    return render_template(
+        "index.html",
+        categorias=sorted(CATEGORIAS),
+        mes_actual=date.today().strftime("%Y-%m"),
+    )
 
 @app.errorhandler(404)
 def ruta_no_encontrada(_error):
