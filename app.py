@@ -172,6 +172,27 @@ def leer_gasto_valido():
 def gasto_no_encontrado(gasto_id):
     return jsonify({"error": f"No existe ningún gasto con ID {gasto_id}."}), 404
 
+@app.get("/gastos/<int:gasto_id>")
+def obtener_gasto(gasto_id):
+    with get_connection() as conn:
+        fila = conn.execute(
+            "SELECT id, fecha, importe_centavos, categoria, descripcion "
+            "FROM gastos WHERE id = ?",
+            (gasto_id,),
+        ).fetchone()
+
+    if fila is None:
+        return gasto_no_encontrado(gasto_id)
+
+    id_, fecha, centavos, categoria, descripcion = fila
+    return jsonify({
+        "id": id_,
+        "fecha": fecha,
+        "importe": centavos / 100,
+        "categoria": categoria,
+        "descripcion": descripcion,
+    }), 200
+
 @app.post("/gastos")
 def crear_gasto():
     data = request.get_json(silent=True)
