@@ -260,6 +260,67 @@ def eliminar_gasto(gasto_id):
 
     return "", 204
 
+@app.get("/gastos/resumen")
+def resumen_gastos():
+    errores, mes, _, _ = validar_filtros({
+        "mes": request.args.get("mes", "")
+    })
+
+    if not mes:
+        errores["mes"] = (
+            "El parámetro 'mes' es obligatorio y debe tener formato AAAA-MM."
+        )
+
+    if errores:
+        return jsonify({
+            "error": "Parámetros inválidos. Corrige los parámetros indicados.",
+            "mensajes": errores,
+        }), 400
+
+    with get_connection() as conn:
+        filas = conn.execute(
+            """
+            SELECT categoria, SUM(importe_centavos)
+            FROM gastos
+            WHERE substr(fecha, 1, 7) = ?
+            GROUP BY categoria
+            """,
+            (mes,),
+        ).fetchall()
+
+    importes = dict(filas)
+    total_centavos = sum(importes.values())
+    categorias = []
+
+    for categoria in sorted(CATEGORIAS):
+        centavos = importes.get(categoria, 0)
+        porcentaje = 0
+
+        if total_centavos:
+            porcentaje = float(
+                (
+                    Decimal(centavos)
+                    / Decimal(total_centavos)
+                    * Decimal(100)
+                ).quantize(Decimal("0.01"))
+            )
+
+        categorias.append({
+            "categoria": categoria,
+            "total_centavos": centavos,
+            "porcentaje": porcentaje,
+        })
+
+    respuesta = {
+        "mes": mes,
+        "total_centavos": total_centavos,
+        "categorias": categorias,
+    }
+
+    if not filas:
+        respuesta["mensaje"] = "No hay gastos registrados en este mes"
+
+    return jsonify(respuesta), 200
 
 @app.errorhandler(404)
 def ruta_no_encontrada(_error):
