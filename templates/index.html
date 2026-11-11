@@ -9,8 +9,17 @@
 </head>
 <body>
   <main>
-    <h1>Mis gastos</h1>
-    <p>Consulta y filtra tus gastos personales.</p>
+    <header class="cabecera-listado">
+        <div>
+            <h1>Mis gastos</h1>
+            <p>Consulta y filtra tus gastos personales.</p>
+        </div>
+        <a class="boton" href="{{ url_for('nuevo_gasto') }}">+ Nuevo gasto</a>
+    </header>
+
+    {% if request.args.get('registrado') == '1' %}
+    <p class="exito" role="status">Gasto registrado correctamente</p>
+    {% endif %}
 
     <form id="filtros">
       <label for="mes">

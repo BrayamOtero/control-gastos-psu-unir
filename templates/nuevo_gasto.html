@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Registrar gasto</title>
+  <link rel="stylesheet"
+        href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+  <main class="pagina-formulario">
+    <h1>Registrar gasto</h1>
+    <p>Completa los campos obligatorios para guardar tu gasto.</p>
+
+    <form id="nuevo-gasto" novalidate aria-busy="false">
+      <label for="fecha">
+        Fecha (obligatoria)
+        <input id="fecha" name="fecha" type="date" required>
+      </label>
+
+      <label for="importe">
+        Importe (obligatorio)
+        <input id="importe" name="importe" type="text"
+               inputmode="decimal" placeholder="Ej.: 12,50" required>
+      </label>
+
+      <label for="categoria">
+        Categoría (obligatoria)
+        <select id="categoria" name="categoria" required>
+          <option value="">Selecciona una categoría</option>
+          {% for categoria in categorias %}
+          <option value="{{ categoria }}">{{ categoria }}</option>
+          {% endfor %}
+        </select>
+      </label>
+
+      <label for="descripcion" class="ancho-completo">
+        Descripción (opcional)
+        <textarea id="descripcion" name="descripcion" rows="4"></textarea>
+      </label>
+
+      <p id="mensaje" class="ancho-completo"
+         role="alert" aria-live="assertive"></p>
+
+      <div class="acciones ancho-completo">
+        <button id="guardar" type="submit">Guardar gasto</button>
+        <a class="boton secundario" href="{{ url_for('index') }}">
+          Volver al listado
+        </a>
+      </div>
+    </form>
+  </main>
+
+  <script>
+    const formulario = document.querySelector("#nuevo-gasto");
+    const fecha = document.querySelector("#fecha");
+    const importe = document.querySelector("#importe");
+    const categoria = document.querySelector("#categoria");
+    const descripcion = document.querySelector("#descripcion");
+    const guardar = document.querySelector("#guardar");
+    const mensaje = document.querySelector("#mensaje");
+    const endpoint = {{ url_for('crear_gasto') | tojson }};
+    const listado = {{ url_for('index', registrado='1') | tojson }};
+    let enviando = false;
+
+    formulario.addEventListener("submit", async evento => {
+      evento.preventDefault();
+      if (enviando) return;
+
+      mensaje.textContent = "";
+      mensaje.classList.remove("error");
+
+      const errores = [];
+      const valorImporte = importe.value.trim().replace(",", ".");
+      let primerCampoInvalido = null;
+
+      function agregarError(campo, texto) {
+        errores.push(texto);
+        if (!primerCampoInvalido) primerCampoInvalido = campo;
+      }
+
+      if (!fecha.value || !fecha.validity.valid) {
+        agregarError(fecha, "Selecciona una fecha válida.");
+      }
+
+      if (
+        !/^\d+(?:\.\d{1,2})?$/.test(valorImporte) ||
+        !Number.isFinite(Number(valorImporte)) ||
+        Number(valorImporte) <= 0
+      ) {
+        agregarError(
+          importe,
+          "El importe debe ser numérico, mayor que cero y tener como máximo dos decimales."
+        );
+      }
+
+      if (!categoria.value || !categoria.validity.valid) {
+        agregarError(categoria, "Selecciona una categoría.");
+      }
+
+      if (errores.length) {
+        mensaje.textContent = errores.join(" ");
+        mensaje.classList.add("error");
+        primerCampoInvalido.focus();
+        return;
+      }
+
+      enviando = true;
+      guardar.disabled = true;
+      guardar.textContent = "Guardando…";
+      formulario.setAttribute("aria-busy", "true");
+      mensaje.textContent = "Guardando gasto…";
+
+      try {
+        const respuesta = await fetch(endpoint, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+          body: JSON.stringify({
+            fecha: fecha.value,
+            importe: valorImporte,
+            categoria: categoria.value,
+            descripcion: descripcion.value,
+          }),
+        });
+
+        if (respuesta.status === 201) {
+          window.location.assign(listado);
+          return;
+        }
+
+        let texto = "No se pudo guardar el gasto. Inténtalo de nuevo.";
+
+        if (respuesta.headers.get("content-type")?.includes("application/json")) {
+          const datos = await respuesta.json();
+          const detalles = datos?.mensajes;
+          const erroresApi = detalles && typeof detalles === "object"
+            ? Object.values(detalles).filter(valor => typeof valor === "string")
+            : [];
+
+          texto = erroresApi.join(" ") ||
+            (typeof datos?.error === "string" ? datos.error : "") ||
+            texto;
+        }
+
+        throw new Error(texto);
+      } catch (error) {
+        mensaje.textContent =
+          error instanceof TypeError || error instanceof SyntaxError
+            ? "No se pudo completar la solicitud. Revisa tu conexión e inténtalo de nuevo."
+            : error instanceof Error
+              ? error.message
+              : "No se pudo guardar el gasto. Inténtalo de nuevo.";
+        mensaje.classList.add("error");
+      } finally {
+        enviando = false;
+        guardar.disabled = false;
+        guardar.textContent = "Guardar gasto";
+        formulario.setAttribute("aria-busy", "false");
+      }
+    });
+  </script>
+</body>
+</html>

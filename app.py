@@ -330,6 +330,13 @@ def index():
         mes_actual=date.today().strftime("%Y-%m"),
     )
 
+@app.get("/gastos/nuevo")
+def nuevo_gasto():
+    return render_template(
+        "nuevo_gasto.html",
+        categorias=sorted(CATEGORIAS),
+    )
+
 @app.errorhandler(404)
 def ruta_no_encontrada(_error):
     return jsonify({"error": "Recurso no encontrado. Revisa la URL y el ID del gasto."}), 404
