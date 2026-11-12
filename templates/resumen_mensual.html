@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Resumen mensual</title>
+  <link rel="stylesheet"
+        href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+  <main>
+    <header class="cabecera-listado">
+      <h1>Resumen mensual</h1>
+      <a class="boton secundario" href="{{ url_for('index') }}">
+        Volver al listado
+      </a>
+    </header>
+
+    <form id="filtro-resumen">
+      <label for="mes">
+        Mes
+        <input id="mes" name="mes" type="month" required>
+      </label>
+    </form>
+
+    <p id="estado" role="status" aria-live="polite"></p>
+
+    <section id="resumen" aria-label="Resumen del mes" aria-busy="false">
+      <div id="datos" hidden>
+        <h2>Total mensual: <span id="total"></span></h2>
+
+        <div id="grafico-contenedor" class="grafico-resumen" hidden>
+          <canvas id="grafico" role="img"
+                  aria-label="Distribución de gastos por categoría. Desglose disponible en la tabla.">
+          </canvas>
+        </div>
+
+        <div class="tabla-contenedor">
+          <table>
+            <caption>Desglose por categoría</caption>
+            <thead>
+              <tr>
+                <th scope="col">Categoría</th>
+                <th scope="col" class="importe">Importe</th>
+                <th scope="col" class="importe">Porcentaje</th>
+              </tr>
+            </thead>
+            <tbody id="categorias"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+  <script>
+    const mes = document.querySelector("#mes");
+    const estado = document.querySelector("#estado");
+    const resumen = document.querySelector("#resumen");
+    const datos = document.querySelector("#datos");
+    const total = document.querySelector("#total");
+    const cuerpo = document.querySelector("#categorias");
+    const contenedorGrafico = document.querySelector("#grafico-contenedor");
+    const endpoint = {{ url_for('resumen_gastos') | tojson }};
+
+    let grafico = null;
+    let ultimaConsulta = 0;
+
+    const hoy = new Date();
+    const mesActual =
+      `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, "0")}`;
+
+    mes.max = mesActual;
+    mes.value = mesActual;
+
+    const formatearImporte = centavos => (centavos / 100).toFixed(2);
+
+    function limpiarResumen() {
+      datos.hidden = true;
+      contenedorGrafico.hidden = true;
+      total.textContent = "";
+      cuerpo.replaceChildren();
+
+      if (grafico) {
+        grafico.data.labels = [];
+        grafico.data.datasets[0].data = [];
+        grafico.update("none");
+      }
+    }
+
+    function actualizarGrafico(categorias) {
+      const etiquetas = categorias.map(item => item.categoria);
+      const importes = categorias.map(item => item.total_centavos);
+
+      if (!grafico) {
+        grafico = new Chart(document.querySelector("#grafico"), {
+          type: "pie",
+          data: {
+            labels: etiquetas,
+            datasets: [{
+              data: importes,
+              backgroundColor: [
+                "#2456bd", "#d97706", "#15803d", "#b91c1c",
+                "#7e22ce", "#0e7490", "#64748b"
+              ],
+            }],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                position: "bottom",
+              },
+            },
+          },
+        });
+      }
+
+      grafico.data.labels = etiquetas;
+      grafico.data.datasets[0].data = importes;
+      grafico.options.plugins.tooltip.callbacks.label = contexto => {
+        const item = categorias[contexto.dataIndex];
+        return `${item.categoria}: ${formatearImporte(item.total_centavos)} ` +
+          `(${item.porcentaje.toFixed(2)} %)`;
+      };
+
+      contenedorGrafico.hidden = false;
+      grafico.update();
+      grafico.resize();
+    }
+
+    async function cargarResumen() {
+      const consulta = ++ultimaConsulta;
+      limpiarResumen();
+      estado.classList.remove("error");
+
+      if (!mes.value || !mes.checkValidity()) {
+        estado.textContent =
+          "Selecciona un mes válido que no sea posterior al mes actual.";
+        estado.classList.add("error");
+        resumen.setAttribute("aria-busy", "false");
+        return;
+      }
+
+      estado.textContent = "Cargando resumen…";
+      resumen.setAttribute("aria-busy", "true");
+
+      try {
+        const parametros = new URLSearchParams({ mes: mes.value });
+        const respuesta = await fetch(`${endpoint}?${parametros}`, {
+          headers: { Accept: "application/json" },
+        });
+
+        if (consulta !== ultimaConsulta) return;
+
+        if (!respuesta.headers.get("content-type")?.includes("application/json")) {
+          throw new Error("El servidor no pudo devolver el resumen.");
+        }
+
+        const resultado = await respuesta.json();
+        if (consulta !== ultimaConsulta) return;
+
+        if (!respuesta.ok) {
+          const detalles = resultado?.mensajes;
+          const mensajes = detalles && typeof detalles === "object"
+            ? Object.values(detalles).filter(valor => typeof valor === "string")
+            : [];
+
+          throw new Error(
+            mensajes.join(" ") ||
+            (typeof resultado?.error === "string" ? resultado.error : "") ||
+            "No se pudo consultar el resumen."
+          );
+        }
+
+        if (
+          !Number.isSafeInteger(resultado?.total_centavos) ||
+          resultado.total_centavos < 0 ||
+          !Array.isArray(resultado.categorias) ||
+          !resultado.categorias.every(item =>
+            typeof item?.categoria === "string" &&
+            Number.isSafeInteger(item.total_centavos) &&
+            item.total_centavos >= 0 &&
+            Number.isFinite(item.porcentaje)
+          )
+        ) {
+          throw new Error("El servidor devolvió un resumen con formato inválido.");
+        }
+
+        total.textContent = formatearImporte(resultado.total_centavos);
+
+        for (const item of resultado.categorias) {
+          const fila = document.createElement("tr");
+
+          [
+            item.categoria,
+            formatearImporte(item.total_centavos),
+            `${item.porcentaje.toFixed(2)} %`,
+          ].forEach((valor, indice) => {
+            const celda = document.createElement(indice === 0 ? "th" : "td");
+            celda.textContent = valor;
+            if (indice === 0) celda.scope = "row";
+            else celda.classList.add("importe");
+            fila.append(celda);
+          });
+
+          cuerpo.append(fila);
+        }
+
+        datos.hidden = false;
+
+        if (resultado.total_centavos === 0) {
+          estado.textContent = "No hay gastos registrados en este mes";
+        } else if (typeof Chart === "undefined") {
+          estado.textContent =
+            "No se pudo cargar el gráfico. Puedes consultar el desglose en la tabla.";
+          estado.classList.add("error");
+        } else {
+          actualizarGrafico(resultado.categorias);
+          estado.textContent = "";
+        }
+      } catch (error) {
+        if (consulta !== ultimaConsulta) return;
+
+        limpiarResumen();
+        estado.textContent =
+          error instanceof TypeError || error instanceof SyntaxError
+            ? "No se pudo cargar el resumen. Revisa tu conexión e inténtalo de nuevo."
+            : error instanceof Error
+              ? error.message
+              : "No se pudo cargar el resumen. Inténtalo de nuevo.";
+        estado.classList.add("error");
+      } finally {
+        if (consulta === ultimaConsulta) {
+          resumen.setAttribute("aria-busy", "false");
+        }
+      }
+    }
+
+    document.querySelector("#filtro-resumen").addEventListener("submit", evento => {
+      evento.preventDefault();
+      cargarResumen();
+    });
+
+    mes.addEventListener("change", cargarResumen);
+    cargarResumen();
+  </script>
+</body>
+</html>
