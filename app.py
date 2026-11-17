@@ -341,6 +341,18 @@ def nuevo_gasto():
 def resumen_mensual():
     return render_template("resumen_mensual.html")
 
+@app.get("/gastos/<int:gasto_id>/ver")
+def ver_gasto(gasto_id):
+    return render_template("ver_gasto.html", gasto_id=gasto_id)
+
+
+@app.get("/gastos/<int:gasto_id>/editar")
+def editar_gasto(gasto_id):
+    return render_template(
+        "editar_gasto.html",
+        gasto_id=gasto_id,
+        categorias=sorted(CATEGORIAS),
+    )
 @app.errorhandler(404)
 def ruta_no_encontrada(_error):
     return jsonify({"error": "Recurso no encontrado. Revisa la URL y el ID del gasto."}), 404

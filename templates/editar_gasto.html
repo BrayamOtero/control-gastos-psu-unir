@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Editar gasto</title>
+  <link rel="stylesheet"
+        href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+  <main class="pagina-formulario">
+    <h1>Editar gasto</h1>
+    <p>Modifica los datos y guarda los cambios.</p>
+
+    <form id="editar-gasto" class="formulario-gasto" novalidate aria-busy="true">
+      <label for="fecha">
+        Fecha (obligatoria)
+        <input id="fecha" name="fecha" type="date" required disabled>
+      </label>
+
+      <label for="importe">
+        Importe (obligatorio)
+        <input id="importe" name="importe" type="text"
+               inputmode="decimal" placeholder="Ej.: 12,50" required disabled>
+      </label>
+
+      <label for="categoria">
+        Categoría (obligatoria)
+        <select id="categoria" name="categoria" required disabled>
+          <option value="">Selecciona una categoría</option>
+          {% for categoria in categorias %}
+          <option value="{{ categoria }}">{{ categoria }}</option>
+          {% endfor %}
+        </select>
+      </label>
+
+      <label for="descripcion" class="ancho-completo">
+        Descripción (opcional)
+        <textarea id="descripcion" name="descripcion" rows="4" disabled></textarea>
+      </label>
+
+      <p id="mensaje" class="ancho-completo" role="alert" aria-live="assertive">
+        Cargando gasto…
+      </p>
+
+      <div class="acciones ancho-completo">
+        <button id="guardar" type="submit" disabled>Guardar cambios</button>
+        <a id="volver" class="boton secundario" href="{{ url_for('index') }}">
+          Volver al listado
+        </a>
+      </div>
+    </form>
+  </main>
+
+  <script>
+    const formulario = document.querySelector("#editar-gasto");
+    const fecha = document.querySelector("#fecha");
+    const importe = document.querySelector("#importe");
+    const categoria = document.querySelector("#categoria");
+    const descripcion = document.querySelector("#descripcion");
+    const guardar = document.querySelector("#guardar");
+    const mensaje = document.querySelector("#mensaje");
+    const gastoUrl = {{ url_for('actualizar_gasto', gasto_id=gasto_id) | tojson }};
+    const listadoUrl = {{ url_for('index') | tojson }};
+    let cargado = false;
+    let enviando = false;
+
+    const filtros = new URLSearchParams();
+    const actuales = new URLSearchParams(window.location.search);
+    for (const nombre of ["mes", "categoria", "q"]) {
+      const valor = actuales.get(nombre);
+      if (valor) filtros.set(nombre, valor);
+    }
+    document.querySelector("#volver").href =
+      listadoUrl + (filtros.toString() ? `?${filtros}` : "");
+
+    function habilitar(activo) {
+      for (const campo of [fecha, importe, categoria, descripcion, guardar]) {
+        campo.disabled = !activo;
+      }
+      formulario.setAttribute("aria-busy", String(!activo));
+    }
+
+    async function leerError(respuesta, porDefecto) {
+      if (!respuesta.headers.get("content-type")?.includes("application/json")) {
+        return porDefecto;
+      }
+      const datos = await respuesta.json();
+      const detalles = datos?.mensajes;
+      const mensajes = detalles && typeof detalles === "object"
+        ? Object.values(detalles).filter(valor => typeof valor === "string")
+        : [];
+      return mensajes.join(" ") ||
+        (typeof datos?.error === "string" ? datos.error : "") ||
+        porDefecto;
+    }
+
+    function mostrarError(error, porDefecto) {
+      mensaje.textContent =
+        error instanceof TypeError || error instanceof SyntaxError
+          ? "No se pudo completar la solicitud. Revisa tu conexión e inténtalo de nuevo."
+          : error instanceof Error ? error.message : porDefecto;
+      mensaje.classList.add("error");
+    }
+
+    async function cargarGasto() {
+      try {
+        const respuesta = await fetch(gastoUrl, {
+          headers: { Accept: "application/json" },
+        });
+
+        if (!respuesta.ok) {
+          throw new Error(
+            await leerError(respuesta, "No se pudo cargar el gasto. Inténtalo de nuevo.")
+          );
+        }
+
+        const gasto = await respuesta.json();
+        fecha.value = gasto.fecha;
+        importe.value = Number(gasto.importe).toFixed(2);
+        categoria.value = gasto.categoria;
+        descripcion.value = gasto.descripcion || "";
+
+        cargado = true;
+        habilitar(true);
+        mensaje.textContent = "";
+      } catch (error) {
+        mostrarError(error, "No se pudo cargar el gasto. Inténtalo de nuevo.");
+      }
+    }
+
+    formulario.addEventListener("submit", async evento => {
+      evento.preventDefault();
+      if (!cargado || enviando) return;
+
+      mensaje.textContent = "";
+      mensaje.classList.remove("error");
+
+      const errores = [];
+      const valorImporte = importe.value.trim().replace(",", ".");
+      let primerCampoInvalido = null;
+
+      function agregarError(campo, texto) {
+        errores.push(texto);
+        if (!primerCampoInvalido) primerCampoInvalido = campo;
+      }
+
+      if (!fecha.value || !fecha.validity.valid) {
+        agregarError(fecha, "Selecciona una fecha válida.");
+      }
+      if (!/^\d+(?:\.\d{1,2})?$/.test(valorImporte) || Number(valorImporte) <= 0) {
+        agregarError(
+          importe,
+          "El importe debe ser numérico, mayor que cero y tener como máximo dos decimales."
+        );
+      }
+      if (!categoria.value) {
+        agregarError(categoria, "Selecciona una categoría.");
+      }
+
+      if (errores.length) {
+        mensaje.textContent = errores.join(" ");
+        mensaje.classList.add("error");
+        primerCampoInvalido.focus();
+        return;
+      }
+
+      enviando = true;
+      guardar.disabled = true;
+      guardar.textContent = "Guardando…";
+      formulario.setAttribute("aria-busy", "true");
+      mensaje.textContent = "Guardando cambios…";
+
+      try {
+        const respuesta = await fetch(gastoUrl, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+          body: JSON.stringify({
+            fecha: fecha.value,
+            importe: valorImporte,
+            categoria: categoria.value,
+            descripcion: descripcion.value,
+          }),
+        });
+
+        if (respuesta.status === 200) {
+          filtros.set("actualizado", "1");
+          window.location.assign(`${listadoUrl}?${filtros}`);
+          return;
+        }
+
+        throw new Error(
+          await leerError(respuesta, "No se pudo guardar el gasto. Inténtalo de nuevo.")
+        );
+      } catch (error) {
+        mostrarError(error, "No se pudo guardar el gasto. Inténtalo de nuevo.");
+      } finally {
+        enviando = false;
+        guardar.disabled = false;
+        guardar.textContent = "Guardar cambios";
+        formulario.setAttribute("aria-busy", "false");
+      }
+    });
+
+    cargarGasto();
+  </script>
+</body>
+</html>

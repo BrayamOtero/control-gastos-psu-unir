@@ -24,6 +24,8 @@
 
     {% if request.args.get('registrado') == '1' %}
     <p class="exito" role="status">Gasto registrado correctamente</p>
+    {% elif request.args.get('actualizado') == '1' %}
+    <p class="exito" role="status">Gasto actualizado correctamente</p>
     {% endif %}
 
     <form id="filtros">
@@ -96,7 +98,7 @@
       }
       const url = new URL(window.location.href);
 
-      for (const nombre of ["mes", "categoria", "q"]) {
+      for (const nombre of ["mes", "categoria", "q", "registrado", "actualizado"]) {
         url.searchParams.delete(nombre);
       }
 
@@ -170,14 +172,31 @@
           });
 
           const acciones = document.createElement("td");
-          const eliminar = document.createElement("button");
+          const grupo = document.createElement("div");
+          const sufijo = query ? `?${query}` : "";
 
+          const ver = document.createElement("a");
+          ver.className = "boton secundario";
+          ver.href = `${endpoint}/${encodeURIComponent(gasto.id)}/ver${sufijo}`;
+          ver.textContent = "Ver";
+          ver.setAttribute("aria-label", `Ver gasto del ${gasto.fecha}`);
+
+          const editar = document.createElement("a");
+          editar.className = "boton secundario";
+          editar.href = `${endpoint}/${encodeURIComponent(gasto.id)}/editar${sufijo}`;
+          editar.textContent = "Editar";
+          editar.setAttribute("aria-label", `Editar gasto del ${gasto.fecha}`);
+
+          const eliminar = document.createElement("button");
           eliminar.type = "button";
+          eliminar.className = "peligro";
           eliminar.textContent = "Eliminar";
           eliminar.setAttribute("aria-label", `Eliminar gasto del ${gasto.fecha}`);
           eliminar.addEventListener("click", () => eliminarGasto(gasto.id, eliminar));
 
-          acciones.append(eliminar);
+          grupo.className = "acciones-fila";
+          grupo.append(ver, editar, eliminar);
+          acciones.append(grupo);
           fila.append(acciones);
 
           filas.append(fila);

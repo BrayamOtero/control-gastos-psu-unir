@@ -173,7 +173,7 @@ td:last-child {
   max-width: 760px;
 }
 
-#nuevo-gasto {
+#nuevo-gasto .formulario-gasto {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   align-items: start;
@@ -246,5 +246,57 @@ button:disabled {
 @media (max-width: 600px) {
   .grafico-resumen {
     height: 360px;
+  }
+}
+
+.acciones-fila {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.acciones-fila .boton,
+.acciones-fila button {
+  min-height: 36px;
+  padding: 6px 10px;
+}
+
+button.peligro {
+  background: white;
+  color: #a32121;
+  border-color: #a32121;
+}
+
+.tarjeta {
+  margin: 24px 0;
+  padding: 24px;
+  background: white;
+  border-radius: 12px;
+}
+
+.detalle-gasto {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+  margin: 0;
+}
+
+.detalle-gasto dt {
+  font-weight: 600;
+  color: #4a5568;
+}
+
+.detalle-gasto dd {
+  margin: 4px 0 0;
+  overflow-wrap: anywhere;
+}
+
+.importe-detalle {
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 600px) {
+  .detalle-gasto {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
